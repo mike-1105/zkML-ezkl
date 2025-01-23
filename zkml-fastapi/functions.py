@@ -3,7 +3,7 @@ import json
 import os
 import asyncio
 
-result_path = "./results"
+result_path = "./uploaded_files"
 
 def generate_settings():
     model_path = os.path.join(result_path, "network.onnx")
@@ -88,10 +88,6 @@ async def generate_witness():
     # return witness_data
 
 
-
-
-
-
 def generate_proof(input_data):
     # Generate proof using the proving key and input data
     # Generate the proof
@@ -114,6 +110,20 @@ def generate_proof(input_data):
     assert os.path.isfile(proof_path)
     return res
 
+async def create_solidity(vk_path, settings_path):
+    sol_code_path = os.path.join(result_path, 'Verifier.sol')
+    abi_path = os.path.join(result_path, 'Verifier.abi')
+
+    res = await ezkl.create_evm_verifier(
+        vk_path=vk_path,
+        settings_path=settings_path,
+        sol_code_path=sol_code_path,
+        abi_path=abi_path,
+    )
+    assert res == True
+    assert os.path.isfile(sol_code_path)
+
+
 def verify_proof():
     # Verify the proof
     proof_path = os.path.join(result_path, "test.pf")
@@ -125,7 +135,8 @@ def verify_proof():
         settings_path,
         vk_path,
     )
-    assert res == True
+    assert res == True, "ERROR: verify_proof"
+    asyncio.run(create_solidity(vk_path, settings_path))
     return {"data": "Proof is verified"}
 
 
@@ -138,4 +149,5 @@ if __name__ == '__main__':
     #     input_data = json.load(f)
     input_data = os.path.join(result_path, "input.json")
     res = generate_proof(input_data)
+    verify_proof()
     print(res)
